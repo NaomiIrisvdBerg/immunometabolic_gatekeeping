@@ -5,7 +5,7 @@
 ##We then analyse cross-tissue patterns including solid tissues other than those listed in the manuscript, to explore robustness of the patterns
 ##Note further that we also include marker panels not discussed in the manuscript to further explore robustness of patterns.
 ##run script chronologically due to reuse of object names
-##From line ~880 onwards, we explore trends exclusively in the 14 focus tissues (and for focus genes listed in Table 1).
+##From line ~860 onwards, we explore trends exclusively in the 14 focus tissues (and for focus genes listed in Table 1).
 
 
 #load libraries:
