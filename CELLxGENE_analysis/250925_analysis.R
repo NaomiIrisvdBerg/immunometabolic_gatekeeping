@@ -1,10 +1,11 @@
 ##Single cell RNAseq analysis publicly available CELLxGENE data across all tissues for human, normal
 ##In this script, we first explore the inter Publication and inter Sex sources of variance, in order to determine 
 #whether the default download of CELLxGENE (one aggregated Expression value for each unique combination of Cell Type, Gene Symbol and Tissue)
-#can reliably be used to investigate cross-tissue expression patterns for a given subset of genes and cell types.
+#can reliably be used to investigate coarse-grained cross-tissue expression patterns for a given subset of genes and cell types.
 ##We then analyse cross-tissue patterns including solid tissues other than those listed in the manuscript, to explore robustness of the patterns
-##From line ~980 onwards, we explore trends exclusively in the 14 focus tissues
+##Note further that we also include marker panels not discussed in the manuscript to further explore robustness of patterns.
 ##run script chronologically due to reuse of object names
+##From line ~880 onwards, we explore trends exclusively in the 14 focus tissues (and for focus genes listed in Table 1).
 
 
 #load libraries:
@@ -141,7 +142,13 @@ min(CELLxGENE_gene_expression_092525_by_publication_solid_tissues_a$`Number of C
 
 #View(CELLxGENE_gene_expression_092525_by_publication_solid_tissues_a)
 
+##if not filtering by cell type:
 check_publications <- CELLxGENE_gene_expression_092525_by_publication_solid_tissues_a %>%
+  dplyr::group_by(Tissue) %>%
+  dplyr::summarise(n_publications = n_distinct(Publication), .groups = "drop")
+
+##only keeping publications that contain any of the cell types of interest:
+check_publications <- subset(CELLxGENE_gene_expression_092525_by_publication_solid_tissues_a, `Cell Type` == "fibroblast" | `Cell Type` == "T cell" | `Cell Type` == "endothelial cell") %>%
   dplyr::group_by(Tissue) %>%
   dplyr::summarise(n_publications = n_distinct(Publication), .groups = "drop")
 
@@ -212,7 +219,7 @@ CELLxGENE_gene_expression_092525_by_publication_solid_tissues_b1_stromal <- subs
 ##Publication-to-publication differences (batch effects, methods, biases) are real but smaller than biological differences across genes:
 ##Because the dominant source of signal is still the Gene Symbol itself rather than Publication, we can go ahead with reliably interpreting and comparing expressions across genes
 ##Note that Tissue is omitted from the model because it is strongly confounded with Publication (many publications sample only one tissue), so a separate Tissue random effect is not reliably estimable and its variance would mostly be absorbed into Publication
-##Publication and Tissue are thus partially confounded, so the Publication variance likely overestimates purely technical/bacth effect noise
+##Publication and Tissue are thus partially confounded, so the Publication variance likely overestimates purely technical/batch effect noise
 fit_stromal_cells_all_solid_tissues <- lmer(Expression ~ 1 + (1 | Publication) + (1 | `Gene Symbol`),
                                           data = CELLxGENE_gene_expression_092525_by_publication_solid_tissues_b1_stromal)
                                           
@@ -228,20 +235,15 @@ CELLxGENE_gene_expression_092525_by_publication_solid_tissues_b1_T <- subset(CEL
 #take out genes not reflective of T cell biology (i.e., stromal specific genes)
 CELLxGENE_gene_expression_092525_by_publication_solid_tissues_b1_T <- subset(CELLxGENE_gene_expression_092525_by_publication_solid_tissues_b1_T, Class != "ECM_density")
 
-
-##Publication-to-publication differences (batch effects, methods, biases) are real but much smaller than biological differences across genes.
-##Because the dominant source of signal is still the Gene Symbol itself rather than Publication, we can go ahead with reliably interpreting and comparing expressions across genes
-##Note that Tissue is omitted from the model because it is strongly confounded with Publication (many publications sample only one tissue), so a separate Tissue random effect is not reliably estimable and its variance would mostly be absorbed into Publication
-##Publication and Tissue are thus partially confounded, so the Publication variance likely overestimates purely technical/bacth effect noise
 fit_T_cells_all_solid_tissues <- lmer(Expression ~ 1 + (1 | Publication) + (1 | `Gene Symbol`),
                                             data = CELLxGENE_gene_expression_092525_by_publication_solid_tissues_b1_T)
 
-VarCorr(fit_T_cells_all_solid_tissues)
 
-
-##so: For stromal cells, biological variation is dominated by gene identity, Publication noise is modest: so aggregating across publications is assumed safe
+##so: For stromal cells, biological variation is dominated by gene identity, Publication noise is in similar order of magnitude but still smaller: so aggregating across publications is assumed safe
 ##Re. T cells, Publication absorbs both technical and tissue-level biological variation; The signal is a mix of real tissue biology and study-specific noise; but we assume this does not invalidate tissue comparisons
 ##especially since our focus is on comparing stromal metabolic profiles between tissues.
+VarCorr(fit_T_cells_all_solid_tissues)
+
 
 
 
@@ -355,27 +357,6 @@ CELLxGENE_gene_expression_092525_by_sex_solid_tissues_c_fibroblast <- subset(CEL
                                                                                `Cell Type` == "fibroblast")
 
 
-##inspect sex-based differences
-ggplot(
-  subset(CELLxGENE_gene_expression_092525_by_sex_solid_tissues_c_fibroblast, Sex != "unknown"),
-  aes(x = Expression, colour = Sex, fill = Sex)
-) +
-  geom_density(alpha = 0.3) +
-  facet_wrap(~ Tissue, scales = "free") + ##one panel per tissue
-  xlim(0.5, 3.5) +
-  labs(
-    x = "Expression",
-    y = "Density",
-    title = "Distribution of Expression per Sex by Tissue"
-  ) +
-  theme_bw() +
-  theme(
-    legend.position = "bottom",
-    strip.text = element_text(size = 9)
-  )
-
-
-
 
 ####investigate role of sex variance for stromal cells across all solid tissues, excluding T cell exhaustion genes
 CELLxGENE_gene_expression_092525_by_sex_solid_tissues_b1_stromal <- subset(CELLxGENE_gene_expression_092525_by_sex_solid_tissues_b1, `Cell Type` == "fibroblast" | `Cell Type` == "endothelial cell")
@@ -415,15 +396,9 @@ VarCorr(fit_T_cells_all_solid_tissues_by_sex)
 ###this is the default by which CELLxGENE data is downloaded when selecting genes, tissues and cell types of interest.
 
 
-
-
-
-
-
 ###inspect relative expressions in the aggregated data (DEFAULT DOWNLOAD FROM CELLXGENE):
 ##Note that in the script below we do not just calculate the relative (weighted & normalised) expressions as shown in Table 1 of the manuscript,
 ##but we also explore cross-tissue correlations as suggested in Table 1, as well as tropisms hinted at within the manuscript.
-##for simple relative ordering of Expressions as shown in Table 1, the block at line ~670 contains a helpful visualisation
 
 CELLxGENE_gene_expression_092525_T_cell_exhaustion$Class <- "T_cell_exhaustion"
 CELLxGENE_gene_expression_092525_beta_oxidation$Class <- "beta_oxidation"
@@ -663,116 +638,6 @@ mean_expression_intrinsic_2 <- subset(filtered_data_intrinic_1, `Gene Symbol` ==
   )
 
 
-###########Genes of interest investigated individually:
-##barplots of each indiviudal gene across focus tissues:
-
-
-focus_tissues <- c(
-  "colon", "brain", "breast", "esophagus", "eye", "fallopian tube",
-  "kidney", "liver", "lung", "pancreas", "prostate gland",
-  "skin of body", "stomach", "bladder"
-)
-
-
-#CD8+, first column Table 1 (here, dark pink means predominantly 'Bad' or 'None' prognostic value of T cell infiltration as reported in Bruni et al., 2020)
-qualifier1_colours <- c(
-  kidney = "#d75fa4", brain = "#d75fa4", eye = "#d75fa4", esophagus = "#d75fa4",
-  `prostate gland` = "#e8a6cc",     
-  stomach = "lightgrey",
-  pancreas = "#C7E9C0", lung = "#C7E9C0", 
-  default = "#32CD32"       
-)
-
-#Tregs, second column Table 1
-qualifier2_colours <- c(
-  stomach = "#e8a6cc",      
-  `fallopian tube` = "lightgrey",
-  skin = "lightgrey",
-  bladder = "#32CD32", colon = "#32CD32",
-  default = "#d75fa4"
-)
-
-filtered_data_intrinic_1_focus <- filtered_data_intrinic_1 %>%
-  dplyr::filter(Tissue %in% focus_tissues,
-                `Gene Symbol` == "SLC2A1")
-
-filtered_data_intrinic_1_focus <- filtered_data_intrinic_1_focus %>%
-  dplyr::mutate(Tissue = reorder(Tissue, Weighted_Expression))
-
-
-filtered_data_intrinic_1_focus <- filtered_data_intrinic_1_focus %>%
-  dplyr::mutate(
-    qualifier1 = case_when(
-      Tissue %in% c("kidney", "brain", "eye", "esophagus") ~ qualifier1_colours["kidney"],
-      Tissue == "prostate gland" ~ qualifier1_colours["prostate gland"],
-      Tissue == "stomach" ~ qualifier1_colours["stomach"],
-      Tissue %in% c("pancreas", "lung") ~ qualifier1_colours["pancreas"],
-      TRUE ~ qualifier1_colours["default"]
-    ),
-    qualifier2 = case_when(
-      Tissue == "stomach" ~ qualifier2_colours["stomach"],
-      Tissue %in% c("fallopian tube", "skin") ~ qualifier2_colours["skin"],
-      Tissue %in% c("bladder", "colon") ~ qualifier2_colours["bladder"],
-      TRUE ~ qualifier2_colours["default"]
-    ),
-    Tissue = reorder(Tissue, Weighted_Expression),
-    log10_Cell_Count = log10(Total_Cell_Count)
-  )
-
-
-
-filtered_data_intrinic_1_focus <- filtered_data_intrinic_1_focus %>%
-  dplyr::mutate(Tissue = reorder(Tissue, Weighted_Expression))
-
-qualifiers_df <- filtered_data_intrinic_1_focus %>%
-  distinct(Tissue, qualifier1, qualifier2)
-
-##add qualifier/t cell infiltration --> prognosis paradox boxes
-p_boxes <- ggplot(qualifiers_df, aes(y = Tissue)) +
-  geom_point(aes(x = 1, color = qualifier1), shape = 15, size = 4) +
-  geom_point(aes(x = 1.3, color = qualifier2), shape = 15, size = 4) +
-  annotate("text", x = 1, y = length(unique(qualifiers_df$Tissue)) + 0.3,
-           label = "CD8+", angle = 90, size = 4, hjust = 0) +
-  annotate("text", x = 1.3, y = length(unique(qualifiers_df$Tissue)) + 0.3,
-           label = "Treg", angle = 90, size = 4, hjust = 0) +
-  scale_color_identity() +
-  coord_cartesian(xlim = c(0.7, 1.7), clip = "off") +
-  theme_void(base_size = 14) +
-  theme(
-    plot.margin = margin(5, -5, 5, 20)
-  )
-
-
-##main bubble plot with gene expression per focus tissue
-p_bubbles <- ggplot(filtered_data_intrinic_1_focus,
-                    aes(x = Weighted_Expression, y = Tissue,
-                        size = log10_Cell_Count)) +
-  geom_point(color = "grey30", alpha = 0.7) +
-  scale_size_continuous(
-    name = expression(log[10]*"(Total Cell Count)"),
-    range = c(3, 12)
-  ) +
-  theme_minimal(base_size = 14) +
-  labs(
-    title = "SLC2A1 Expression\nWeighted across fibroblasts + endothelial cells",
-    x = "Weighted Expression",
-    y = " "
-  ) +
-  theme(
-    panel.grid = element_blank(),
-    axis.line = element_line(color = "black", linewidth = 0.4),
-    axis.ticks = element_line(color = "black", linewidth = 0.4),
-    axis.ticks.length = unit(3, "pt"),
-    panel.border = element_blank(),
-    plot.margin = margin(5, 20, 5, 0)
-  )
-
-##bubble plot with infiltration-->prognosis info
-p_boxes + p_bubbles + plot_layout(widths = c(0.2, 1.2))
-
-
-
-
 
 
 
@@ -829,13 +694,15 @@ intrinsic_wide <- subset(mean_expression_intrinsic_1, Tissue != "adrenal gland")
   dplyr::select(Tissue, Class, Weighted_Expression) %>%
   tidyr::pivot_wider(names_from = Class, values_from = Weighted_Expression)
 
-###add the T-cell exhaustion panel (so beyond just TOX) as a column
+###add the T cell exhaustion panel (so beyond just TOX) as a column
 all_panels <- intrinsic_wide %>%
   dplyr::inner_join(
     mean_expression_T_exhaustion_all %>%
       dplyr::select(Tissue, T_cell_exhaustion = Weighted_Expression),
     by = "Tissue"
   )
+
+length(unique(all_panels$Tissue))
 
 ##remove Tissue column & compute a full Spearman correlation matrix:
 expr_mat <- all_panels %>%
@@ -871,7 +738,7 @@ pheatmap(
   display_numbers = sig_mat,
   number_color = "black",
   main = "Spearman correlations between mean weighted expressions, 
-all solid tissues (N = 29) "
+all solid tissues (N = 25) "
 )
 
 
@@ -988,6 +855,14 @@ cor.test(merged1$Weighted_Expression_intrinsic, merged1$Weighted_Expression_T_ex
 
 
 ###14 focus tissues only:
+CELLxGENE_gene_expression_092525_solid_tissues_b1 <- CELLxGENE_gene_expression_092525_solid_tissues_b1 %>%
+  dplyr::mutate(
+    Tissue = case_when(
+      Tissue %in% c("bladder organ", "urinary bladder") ~ "bladder",
+      TRUE                                              ~ Tissue
+    )
+  )
+
 CELLxGENE_gene_expression_092525_solid_tissues_b1 <- subset(CELLxGENE_gene_expression_092525_solid_tissues_b1, Tissue == "colon" | Tissue == "brain" | Tissue == "breast"
                                                                       | Tissue == "esophagus" | Tissue == "eye" | Tissue == "fallopian tube" | Tissue == "kidney" | Tissue == "liver"
                                                                       | Tissue == "lung" | Tissue == "pancreas" | Tissue == "prostate gland" | Tissue == "skin of body" | Tissue == "stomach" | Tissue == "bladder")
@@ -1045,6 +920,14 @@ mean_expression_T_exhaustion <- filtered_data_T_exhaustion %>%
     Total_Cell_Count = max(Total_Cell_Count, na.rm = TRUE)   
   )
 
+##Note that the bins shown in Table 1, meant to roughly categorise tissue-level expressions relative to each other, were based on the values calculated here:
+mean_expression_T_exhaustion <- mean_expression_T_exhaustion %>%
+  dplyr::mutate(
+    Weighted_Expression_norm = round(
+      Weighted_Expression / max(Weighted_Expression, na.rm = TRUE),
+      2
+    )
+  )
 
 
 ##Next, assess metabolic intensities across tissue intrinsic/stromal cells:
@@ -1119,6 +1002,14 @@ mean_expression_intrinsic_2a <- subset(filtered_data_intrinic_1, `Gene Symbol` =
     Total_Cell_Count = max(Total_Cell_Count, na.rm = TRUE)    
   )
 
+##Note that the bins shown in Table 1, meant to roughly categorise tissue-level expressions relative to each other, were based on the values calculated here:
+mean_expression_intrinsic_2a <- mean_expression_intrinsic_2a %>%
+  dplyr::mutate(
+    Weighted_Expression_norm = round(
+      Weighted_Expression / max(Weighted_Expression, na.rm = TRUE),
+      2
+    )
+  )
 
 
 mean_expression_intrinsic_3 <- subset(filtered_data_intrinic_1, Class == "pH_homeostasis") %>%
@@ -1129,6 +1020,14 @@ mean_expression_intrinsic_3 <- subset(filtered_data_intrinic_1, Class == "pH_hom
     Total_Cell_Count = max(Total_Cell_Count, na.rm = TRUE)  
   )
 
+##Note that the bins shown in Table 1, meant to roughly categorise tissue-level expressions relative to each other, were based on the values calculated here:
+mean_expression_intrinsic_3 <- mean_expression_intrinsic_3 %>%
+  dplyr::mutate(
+    Weighted_Expression_norm = round(
+      Weighted_Expression / max(Weighted_Expression, na.rm = TRUE),
+      2
+    )
+  )
 
 
 
@@ -1192,7 +1091,7 @@ tissues <- c(
   "fallopian tube", "kidney",
   "liver","lung","pancreas","prostate gland",
   "skin of body","stomach",
-  "urinary bladder"
+  "bladder"
 )
 
 my_colours <- setNames(distinctColorPalette(length(tissues)), tissues)
