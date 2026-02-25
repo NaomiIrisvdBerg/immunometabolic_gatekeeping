@@ -1,6 +1,6 @@
-##Mouse cross-tissue respiration data as visualised in Supporting materials IB – Cross-tissue mitochondrial respiration in normal mice
+##Mouse cross-tissue respiration data as detailed in Table 1 (and visualised in Supporting materials IB – Cross-tissue mitochondrial respiration in normal mice)
 #source data from: Mitochondrial respiration atlas reveals differential changes in mitochondrial function across sex and age
-#https://elifesciences.org/reviewed-preprints/96926v2?utm
+#https://elifesciences.org/reviewed-preprints/96926v3
 #Link directing to Figure 1—source data 1: 
 #https://elifesciences.org/download/aHR0cHM6Ly9jZG4uZWxpZmVzY2llbmNlcy5vcmcvYXJ0aWNsZXMvOTY5MjYvZWxpZmUtOTY5MjYtZmlnMS1kYXRhMS12MS54bHN4/elife-96926-fig1-data1-v1.xlsx?_hash=Bhx%2Bw4PQpD3o4V0qFtqLtptKWqbzi0MRdgt06rmNt20%3D
 
