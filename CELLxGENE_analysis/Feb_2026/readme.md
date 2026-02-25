@@ -1,7 +1,5 @@
-This folder contains the analysis of the CELLxGENE database (for genes of interest, extracted February 2026) as reported in "Immunometabolic Gatekeeping: How Tissue Metabolism Conditions Tumor Immunity" 
-The first script (260212_cellxgene_main.R) contains the analysis as reported in the manuscript, using CELLxGENE's default cross-publication aggregated 'Expression' values.
-The second script (260212_cellxgene_publication_aware_aggregation.R) contains analysis of the same file, but performs publication aware aggregation (i.e., not defaulted aggregation)
-This second script addresses a key limitation of directly analysing the CELLxGENE publication-aggregated dataset: 
+This folder contains the analysis of the CELLxGENE database (for genes of interest, extracted February 2026) as reported in "Immunometabolic Gatekeeping: How Tissue Metabolism Conditions Tumor Immunity". The first script (260212_cellxgene_main.R) contains the analysis as reported in the manuscript, using CELLxGENE's default cross-publication aggregated 'Expression' values.
+The second script (260212_cellxgene_publication_aware_aggregation.R) contains analysis of the same file, but performs publication aware aggregation (i.e., not defaulted aggregation). This second script addresses a key limitation of directly analysing the CELLxGENE publication-aggregated dataset: 
 because studies use heterogeneous cell-type annotation granularity, filtering only for coarse labels (e.g., "T cell", "endothelial cell", "fibroblast") can exclude high-quality studies that report only finer-grained annotations 
 (such as "fibroblast of mammary gland"), while simultaneously over-representing studies with many subclusters. 
 To resolve this, the second script performs a publication-aware, two-stage aggregation:
