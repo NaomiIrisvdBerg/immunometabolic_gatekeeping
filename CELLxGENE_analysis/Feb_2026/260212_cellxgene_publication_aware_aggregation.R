@@ -372,7 +372,7 @@ CELLxGENE_gene_expression_020626_by_publication_solid_tissues_b1$`Cell Type` <- 
 
 
 
-###is subsetting fro cell tyoe even necessary???
+###subsetting for cell type sanity check
 Feb_2026_by_pub_solid_tissues_b_summarised <- 
   subset(CELLxGENE_gene_expression_020626_by_publication_solid_tissues_b1, `Cell Type` == "endothelial cell" | `Cell Type` == "fibroblast" | `Cell Type` == "T cell")  %>%
   dplyr::group_by(`Gene Symbol`, Tissue, `Cell Type`) %>%
@@ -957,7 +957,7 @@ cor.test(merged1$Weighted_Expression_intrinsic, merged1$Weighted_Expression_T_ex
 
 
 
-###14 focus tissues only:
+###14 focus tissues only (excluding head and neck as there is not one clear representative tissue for this cancer type):
 min(CELLxGENE_gene_expression_020626_solid_tissues_b$Total_Num_Cells_Expr)
 
 unique(CELLxGENE_gene_expression_020626_solid_tissues_b$Tissue)
@@ -1161,7 +1161,7 @@ intrinsic_wide <- mean_expression_intrinsic_1 %>%
   dplyr::select(Tissue, Class, Weighted_Expression) %>%
   tidyr::pivot_wider(names_from = Class, values_from = Weighted_Expression)
 
-###add the T-cell exhaustion panel as a column
+###add the T cell exhaustion panel as a column
 all_panels <- intrinsic_wide %>%
   dplyr::inner_join(
     mean_expression_T_exhaustion_all %>% ##all for complete panel
